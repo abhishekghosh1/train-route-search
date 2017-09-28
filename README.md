@@ -1,0 +1,138 @@
+# PROBLEM: TRAINS #
+================================================================================================================
+
+the local commuter railroad services a number of towns in Hamburg.  Because of monetary concerns, all of the  tracks are 'one-way.' That is, a route from Wandsbek to Altona does not imply the existence of a route from Altona to Wandsbek.  In fact, even if both of these routes do happen to exist, they are distinct and are not necessarily the same distance!
+The purpose of this problem is to help the railroad provide its customers with information about the routes. In particular, you will compute the distance along a certain route, the number of different routes between two towns, and the shortest route between two towns.
+Input: A directed graph where a node represents a town and an edge represents a route between two towns. The weighting of  the edge represents the distance between the two towns. A given route will never appear more than once, and for a given  route, the starting and ending town will not be the same town.
+
+
+## Output: ##
+For test input 1 through 5, if no such route exists, output 'NO SUCH ROUTE'. Otherwise, follow the route as given; do not make any extra stops!  For example, the first problem means to start at city A, then travel directly to city B (a distance of 5), then directly to city C (a distance of 4).
+
+1.  The distance of the route A-B-C.
+2.  The distance of the route A-D.
+3.  The distance of the route A-D-C.
+4.  The distance of the route A-E-B-C-D.
+5.  The distance of the route A-E-D.
+6.  The number of trips starting at C and ending at C with a maximum of 3 stops. In the sample data below, there are two such trips: C-D-C (2 stops). and C-E-B-C (3 stops).
+7.  The number of trips starting at A and ending at C with exactly 4 stops. In the sample data below, there are three such trips: A to C (via B,C,D); A to C (via D,C,D); and A to C (via D,E,B).
+8.  The length of the shortest route (in terms of distance to travel) from A to C.
+9.  The length of the shortest route (in terms of distance to travel) from B to B.
+10. The number of different routes from C to C with a distance of less than 30. In the sample data, the trips are: CDC, CEBC, CEBCDC, CDCEBC, CDEBC, CEBCEBC, CEBCEBCEBC.
+
+
+
+## Test Input: ##
+
+For the test input, the towns are named using the first few letters of the alphabet from A to E. A route between two towns (A to B) with a distance of 5 is represented as AB5.
+
+        Graph: AB5, BC4, CD8, DC8, DE6, AD5, CE2, EB3, AE7
+
+
+## Expected Output:  ##
+        Output #1: 9
+        Output #2: 5
+        Output #3: 13
+        Output #4: 22
+        Output #5: NO SUCH ROUTE
+        Output #6: 2
+        Output #7: 3
+        Output #8: 9
+        Output #9: 9
+        Output #10: 7
+
+## SOLUTION  ##
+================================================================================================================
+
+        1. Building
+        The solution is provided in the form of a Maven project. It can
+        thus be built by invoking the "package" goal so:
+        
+          $ mvn package
+        
+        Note that this goal runs all JUnit tests included in the solution.
+        
+        2. Running the solution
+        The solution can be run on the CLI:
+        
+          $ java -jar target/route-search-1.0.0-SNAPSHOT.jar route-input.txt output-format.txt
+        
+        Note that the sample input and commands files, "route-input.txt" and
+        "output-format.txt" are provided in the solution. These can be of course modified
+        as needed. The format of the files is explained by the help screen produced
+        when the application is run without arguments. Here is a copy of the help
+        screen:
+        
+        Usage: <route-input file> <output-format file>
+        This application analyzes an input trainNetwork as instructed by a series
+        of commands. The format of the input files is as follows:
+        . <route-input file>: file containing a comma separated set of trainNetwork
+        .                connections, where each connection is described 
+        .                by two letters corresponding to the source and target 
+        .                town followed by an integer indicating the weight (i.e
+        .                the "distance") for this route. For example "AC7, CB5")
+        . <output-format file>: file describing the analysis to be performed. Each line
+        .                  corresponds to one action:
+        .                  distance? <towns>: calculates the distance for a given
+        .                                     route. For example: "distance? ADC"
+        .                  trips? <cond> <towns>: calculates the number of possible
+        .                                         trips between two towns which satisfy
+        .                                         a given condition. Conditions are
+        .                                         expressed with a combination of an
+        .                                         operator, a value and an entity name
+        .                                         i.e. ">5 stops" or "=7 distance".
+        .                                         So for example: "trips? <10 stops EA"
+        .                                         means "calculate the number of trips
+        .                                         between E and A which have less than
+        .                                         10 stops.
+        .                  shortest? <towns>:     finds the shortest distance between
+        .                                         two towns (i.e. "shortest? AD")
+        
+        
+        
+        When running the solution from IntelliJ, it is necessary to specify the command
+        line arguments for the application, so in the project properties,
+        select Run->Edit-Configuration->Edit, select the Configuration tab -> Program Argument
+        
+          route-input.txt output-format.txt
+        
+        as program arguments.
+        
+        Here is an example run of the solution:
+        
+        $ java -jar target/route-search-1.0.0-SNAPSHOT.jar  route-input.txt output-format.txt
+        distance? ABC  => 9
+        distance? AD  => 5
+        distance? ADC  => 13
+        distance? AEBCD  => 22
+        distance? AED  => NO SUCH ROUTE
+        trips? <4 stops CC  => 2
+        trips? =4 stops AC  => 3
+        shortest? AC  => 9
+        shortest? BB  => 9
+        trips? <30 distance CC  => 7
+        
+        Note that the application supports only English locale. If you need more translations you need to add different resources(ex:- train-route_de.properties).
+        Then depending on system settings, reports and errors will be reported on different languages.
+        
+        3. Approach
+        The solution to the problem contains 3 different aspects. The commands are read and a given Action object is instantiated to carry on a specific analysis. The 3 main actions are implemented by the following classes:
+        
+        - DistanceAction : its execute() method simply follows the path as requested by
+          the user, recording the distance travelled. If the path specified is not
+          possible, the result is "NO SUCH ROUTE".
+        
+        - TripsAction : when execute()'d , it performs a recursive tree search starting
+          on the first town, to find all possible paths that end at the target town,
+          which satisfy the given condition. This recursive search is carried on by the
+          PathFinder class
+        
+        - ShortestPathAction: execute() will trigger a run of the Dijkstra algorithm
+          to search for the shortest route between the source and the target. It would
+          have also been possible to reuse the PathFinder class for this action, and
+          after finding all possible paths between the start and target towns, simply
+          iterate thru the paths and select the smallest one. This however, implicates
+          selecting an arbitrary maximum number of hops, after which the search for the
+          shortest path should be given up. Furthermore it is highly inefficient. So I
+          decided to implement the search for the shortest path using the well known
+          Dijkstra algorithm.
